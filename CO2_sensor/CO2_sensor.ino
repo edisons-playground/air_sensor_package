@@ -17,35 +17,35 @@ SoftwareSerial K_30_Serial(4,5);                               //Sets up a virtu
 void setup() {
   Serial.begin(115200);
   
-  // SD Card Init
-  if (!SD.begin(chipSelect)) {
-    Serial.println(F("SD Card init. failed!"));
-    while(1);
-  } else {
-  Serial.println(F("SD Card init successful!"));
-  }
-  
-  // File Init
-  char filename[15];
-  sprintf(filename, "/LOG00.txt");
-  for (uint8_t i = 0; i < 100; i++) {
-    filename[4] = '0' + i/10;
-    filename[5] = '0' + i%10;
-    if (! SD.exists(filename)) {          // create if does not exist, do not open existing, write, sync after write
-      break;
-    }
-  }
-
-  Serial.print(F("creating file: "));
-  Serial.println(filename);
-  logfile = SD.open(filename, FILE_WRITE);
-  if( ! logfile ) {
-    Serial.print(F("Couldnt create ")); Serial.println(filename);
-    while(1);
-  }
-  Serial.print(F("Writing to ")); Serial.println(filename);
+//  // SD Card Init
+//  if (!SD.begin(chipSelect)) {
+//    Serial.println(F("SD Card init. failed!"));
+//    while(1);
+//  } else {
+//  Serial.println(F("SD Card init successful!"));
+//  }
+//  
+//  // File Init
+//  char filename[15];
+//  sprintf(filename, "/LOG00.txt");
+//  for (uint8_t i = 0; i < 100; i++) {
+//    filename[4] = '0' + i/10;
+//    filename[5] = '0' + i%10;
+//    if (! SD.exists(filename)) {          // create if does not exist, do not open existing, write, sync after write
+//      break;
+//    }
+//  }
+//
+//  Serial.print(F("creating file: "));
+//  Serial.println(filename);
+//  logfile = SD.open(filename, FILE_WRITE);
+//  if( ! logfile ) {
+//    Serial.print(F("Couldnt create ")); Serial.println(filename);
+//    while(1);
+//  }
+//  Serial.print(F("Writing to ")); Serial.println(filename);
  
-  Serial.println(F("Initializing DK30 sensor..."));
+  Serial.println(F("Initializing K30 sensor..."));
   K_30_Serial.begin(9600);
   Serial.println(F("  K30 initialized"));
 
@@ -53,16 +53,15 @@ void setup() {
 
 
 void loop() {
-    logK30();
-
-    logfile.flush();
+    printK30();
+//    logK30();
 }
 
 
 void K30sendRequest(byte packet[]) {
   while(!K_30_Serial.available()) { //keep sending request until we start to get a response
     K_30_Serial.write(read_CO2,7);
-    //Serial.println(F("writing..."));
+//    Serial.println(F("writing..."));
     delay(50);
   }
   int timeout=0;  //set a timeoute counter
@@ -89,7 +88,15 @@ unsigned long K30getValue(byte packet[]) {
     return val* valMultiplier;
 }
 
-
+void printK30(void)
+{
+    Serial.println("Reading K30");
+    K_30_Serial.listen();
+    K30sendRequest(read_CO2);
+    unsigned long valCO2 = K30getValue(response);
+    Serial.print(F("K30: Co2 ppm = "));
+    Serial.println(valCO2);
+}
 
 void logK30(void)
 {
@@ -100,4 +107,5 @@ void logK30(void)
     Serial.println(valCO2);
     logfile.print(F("K30,"));
     logfile.println(valCO2);
+    logfile.flush();
 }

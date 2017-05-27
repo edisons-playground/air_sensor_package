@@ -66,12 +66,34 @@ void setup() {
 int dhtSkip = false;
 
 void loop() {
+//  printDHT();
   logDHT();
-  Serial.println();
+  Serial.println("Delaying");
+  delay(5000);
   Serial.println();
 
 }
 
+
+void printDHT(void)
+{
+  if(readDHT()) {
+       // log DHT data 
+       Serial.print(F("DHT,"));
+       Serial.print(dhtData.humidity);
+       Serial.print(F(","));
+       Serial.print(dhtData.temp_c);
+       Serial.print(F(","));
+       Serial.print(dhtData.temp_f);
+       Serial.print(F(","));
+       Serial.println(dhtData.heatIndex);
+       // logfile.flush();
+    }
+    else {
+       Serial.println(F("DHT,-1,-1,-1,-1"));
+       // logfile.flush();
+    }
+}
 
 void logDHT(void)
 {

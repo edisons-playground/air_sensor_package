@@ -55,7 +55,7 @@ void loop(void)
 void logCO(void)
 {
   int reading = analogRead(A0);
-  Serial.println("CO Sensor, "); Serial.println(reading);
+  Serial.print("CO Sensor, "); Serial.println(reading);
   logfile.print(F("CO Sensor, "));
   logfile.print(reading);
   analogWrite(ledPin, reading);

@@ -4,15 +4,12 @@
 #include <SD.h>
 #include <Wire.h>
 
-int const smallPM1 = 13;
-int const largePM1 = 12;
+int const smallPM1 = 3;
 long const sampleRate = 20;
 long measurementCount = 0;
 long smallPM1Count = 0;
-long largePM1Count = 0;
 long priorSampleTime = 0;
 double smallPM1percentRunning;
-double largePM1percentRunning;
 File logfile;
 
 #define chipSelect 10
@@ -21,7 +18,6 @@ File logfile;
 void setup() {
   Serial.begin(115200);
   pinMode (smallPM1, INPUT);
-  pinMode (largePM1, INPUT);
   
   // SD Card Init
   if (!SD.begin(chipSelect)) {
@@ -72,13 +68,9 @@ void samplePMDetectors() {
     if (digitalRead(smallPM1) == 0) {
       smallPM1Count += 1;
     }
-    if (digitalRead(largePM1) == 0) {
-      largePM1Count += 1;
-    }
   }
   //calculate running PM percentages
   smallPM1percentRunning = 100.0 * smallPM1Count / measurementCount;
-  largePM1percentRunning = 100.0 * largePM1Count / measurementCount;
 }
 
 
@@ -93,8 +85,6 @@ void printRunningPMDataToSerial() {
   Serial.println(measurementCount);
   Serial.print("Small PM detector 1: ");
   Serial.println(smallPM1percentRunning);
-  Serial.print("Large PM detector 1: ");
-  Serial.println(largePM1percentRunning);
   Serial.println();
 }
 
@@ -104,8 +94,6 @@ void logRunningPMDataToSerial() {
   logfile.println(measurementCount);
   logfile.print("Small PM detector 1: ");
   logfile.println(smallPM1percentRunning);
-  logfile.print("Large PM detector 1: ");
-  logfile.println(largePM1percentRunning);
   logfile.println();
 }
 

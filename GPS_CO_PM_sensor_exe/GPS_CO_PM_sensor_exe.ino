@@ -1,0 +1,232 @@
+#include <SPI.h>
+#include <Adafruit_GPS.h>
+#include <SoftwareSerial.h>
+#include <SD.h>
+
+File logfile;
+int const smallPM1 = 9;
+long const sampleRate = 20;
+long measurementCount = 0;
+long smallPM1Count = 0;
+long priorSampleTime = 0;
+double smallPM1percentRunning;
+
+#define chipSelect 10
+#define ledPin 3             
+#define GPSECHO  false       
+#define LOG_FIXONLY true     
+
+
+SoftwareSerial gps_Serial(8, 7);
+Adafruit_GPS GPS(&gps_Serial);
+                                    
+
+void setup() {
+  Serial.begin(115200);
+  pinMode (smallPM1, INPUT);
+  pinMode(ledPin, OUTPUT);
+  pinMode(10, OUTPUT);   
+  
+  sdCardInitialization();
+
+  Serial.println(F("Initializing GPS..."));
+  GPS.begin(9600);
+
+  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  //GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);   // uncomment this line to turn on only the "minimum recommended" data; For logging data, we don't suggest using anything but either RMC only or RMC+GGA to keep the log files at a reasonable size
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+
+  GPS.sendCommand(PGCMD_ANTENNA);
+
+  gps_Serial.println(PMTK_Q_RELEASE);
+}
+
+int loopCount = 1;
+
+void loop() {
+  gps_Serial.listen();
+  char c = GPS.read();
+
+  if (GPSECHO) {
+     if (c)   Serial.print(c);
+  }
+  
+  if (GPS.newNMEAreceived()) {  
+    if (!GPS.parse(GPS.lastNMEA()))  { // this also sets the newNMEAreceived() flag to false
+      //Serial.println(F("Failed to parse GPS data"));
+      return;  
+    }
+    if (LOG_FIXONLY && !GPS.fix) {
+        Serial.println("No Fix");
+        return;
+    }
+
+    logfile.println(F("#####"));
+    printHeader();
+    
+    char *stringptr = GPS.lastNMEA();
+    uint8_t stringsize = strlen(stringptr);
+    if (stringsize != logfile.write((uint8_t *)stringptr, stringsize))  {
+      Serial.println(F("error with writing to SD")); 
+    }
+    samplePMDetectors();
+    logGPSData();
+    logCO();
+    logRunningPMDataToSerial();
+    logfile.flush();
+  }
+}
+
+
+void sdCardInitialization(void)
+{
+  // SD Card Init
+  if (!SD.begin(chipSelect)) {
+    Serial.println(F("SD Card init. failed!"));
+    while(1);
+  } else {
+  Serial.println(F("SD Card init successful!"));
+  }
+  
+  // File Init
+  char filename[15];
+  sprintf(filename, "/LOG00.txt");
+  for (uint8_t i = 0; i < 100; i++) {
+    filename[4] = '0' + i/10;
+    filename[5] = '0' + i%10;
+    if (! SD.exists(filename)) {
+      break;
+    }
+  }
+
+  Serial.print(F("creating file: "));
+  Serial.println(filename);
+  logfile = SD.open(filename, FILE_WRITE);
+  if( ! logfile ) {
+    Serial.print(F("Couldnt create ")); Serial.println(filename);
+    while(1);
+  }
+  Serial.print(F("Writing to ")); Serial.println(filename);
+}
+
+
+void printGPSData() {
+  Serial.print(F("GPS: "));
+  Serial.print(GPS.month, DEC); Serial.print(F("/"));
+  Serial.print(GPS.day, DEC); Serial.print(F("/20"));
+  Serial.print(GPS.year, DEC);
+  Serial.print(F(" "));
+  Serial.print(GPS.hour, DEC); Serial.print(F(":"));
+  Serial.print(GPS.minute, DEC); Serial.print(F(":"));
+  Serial.print(GPS.seconds, DEC); Serial.print(F("."));
+  Serial.print(GPS.milliseconds);
+  Serial.print(F(" "));
+  Serial.print(F("Fix: ")); Serial.print((int)GPS.fix);
+  Serial.print(F(" quality: ")); Serial.print((int)GPS.fixquality); 
+  Serial.println();
+  if (GPS.fix) {
+    Serial.print(F("LOC: "));
+    Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
+    Serial.print(F(", ")); 
+    Serial.print(GPS.longitude, 4); Serial.print(GPS.lon);
+    Serial.print(F(" Alt: ")); Serial.print(GPS.altitude);
+    Serial.print(F(" Spd: ")); Serial.print(GPS.speed);
+    Serial.print(F(" Sats: ")); Serial.print((int)GPS.satellites);
+    Serial.println();
+  }
+}
+
+
+void logGPSData() {
+  logfile.print(F("GPS1,20"));
+  logfile.print(GPS.year, DEC); logfile.print(F(","));
+  logfile.print(GPS.month, DEC); logfile.print(F(","));
+  logfile.print(GPS.day, DEC);
+  logfile.print(F(","));
+  logfile.print(GPS.hour, DEC); logfile.print(F(","));
+  logfile.print(GPS.minute, DEC); logfile.print(F(","));
+  logfile.print(GPS.seconds, DEC); logfile.print(F(","));
+  logfile.print(GPS.milliseconds);
+  logfile.print(F(","));
+  logfile.print(F("fix_")); logfile.print((int)GPS.fix);
+  logfile.print(F(","));
+  logfile.print(F("qual_")); logfile.print((int)GPS.fixquality); 
+  logfile.println();
+  if (GPS.fix) {
+    logfile.print(F("GPS2,"));
+    logfile.print(GPS.latitude, 6); logfile.print(F(",")); logfile.print(GPS.lat);
+    logfile.print(F(",")); 
+    logfile.print(GPS.longitude, 6); logfile.print(F(",")); logfile.print(GPS.lon);
+    logfile.print(F(",")); logfile.print(GPS.altitude);
+    logfile.print(F(",")); logfile.print(GPS.speed);
+    logfile.print(F(",")); logfile.print((int)GPS.satellites);
+    logfile.println();
+  }
+}
+
+void logCO(void)
+{
+  int reading = analogRead(A0);
+  logfile.print(F("CO Sensor, "));
+  logfile.print(reading);
+  analogWrite(ledPin, reading);
+  logfile.println();
+  delay(10);
+}
+
+void samplePMDetectors() {
+  for (int i = 0; i < 100; i++) {
+    while (millis() - priorSampleTime < sampleRate) {
+    }
+    priorSampleTime = millis();
+    measurementCount += 1;
+    if (digitalRead(smallPM1) == 0) {
+      smallPM1Count += 1;
+    }
+  }
+  //calculate running PM percentages
+  smallPM1percentRunning = 100.0 * smallPM1Count / measurementCount;
+}
+
+
+void timestampSerial() {
+  Serial.print("Milliseconds since the program started: ");
+  Serial.println(millis());
+}
+
+void printRunningPMDataToSerial() {
+  Serial.println("Particulate Matter Data");
+  Serial.print("Measurement Count:  ");
+  Serial.println(measurementCount);
+  Serial.print("Small PM detector 1: ");
+  Serial.println(smallPM1percentRunning);
+  Serial.println();
+}
+
+void logRunningPMDataToSerial() {
+  logfile.println("Particulate Matter Data");
+  logfile.print("Measurement Count:  ");
+  logfile.println(measurementCount);
+  logfile.print("Small PM detector 1: ");
+  logfile.println(smallPM1percentRunning);
+  logfile.println();
+}
+
+void printHeader() {
+  Serial.print(F("##### Sample "));
+  Serial.print(loopCount++);
+  Serial.print(F(" "));
+  Serial.print(millis());
+  Serial.println(F(" ########################################")); 
+}
+
+uint8_t parseHex(char c) {
+  if (c < '0')
+    return 0;
+  if (c <= '9')
+    return c - '0';
+  if (c < 'A')
+    return 0;
+  if (c <= 'F')
+    return (c - 'A')+10;
+}
