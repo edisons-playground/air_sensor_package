@@ -23,7 +23,7 @@ void setup() {
   
   // File Init
   char filename[15];
-  sprintf(filename, "/LOG00.txt");           //manually input file name
+  sprintf(filename, "/LOG27.txt");           //manually input file name
 //  for (uint8_t i = 0; i < 100; i++) {      //uncomment to load first file
 //    filename[4] = '0' + i/10;
 //    filename[5] = '0' + i%10;
@@ -35,9 +35,8 @@ void setup() {
   Serial.print(F("reading file: "));
   Serial.println(filename);
   logfile = SD.open(filename, FILE_READ);
-  if( ! logfile ) {
-    Serial.print(F("Couldnt create ")); Serial.println(filename);
-    while(1);
+  if(logfile) {
+    Serial.print(logfile.read());
   }
 
 }
