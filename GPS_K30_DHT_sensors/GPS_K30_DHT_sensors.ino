@@ -28,7 +28,7 @@ File logfile;
 byte read_CO2[] = {0xFE, 0X44, 0X00, 0X08, 0X02, 0X9F, 0X25};  //Command packet to read Co2 (see app note)
 byte response[] = {0,0,0,0,0,0,0};                             //create an array to store the response
 int valMultiplier = 1;                                         //multiplier for value. default is 1. set to 3 for K-30 3% and 10 for K-33 ICB
-SoftwareSerial K_30_Serial(4,5);  
+SoftwareSerial K_30_Serial(4,5);
 
 // DHT Init
 DHT dht(DHTPIN, DHTTYPE);
@@ -36,13 +36,13 @@ DHT dht(DHTPIN, DHTTYPE);
 // GPS Init
 SoftwareSerial gps_Serial(8, 7);
 Adafruit_GPS GPS(&gps_Serial);
-                                    
+
 
 void setup() {
   Serial.begin(115200);
   pinMode(ledPin, OUTPUT);
-  pinMode(10, OUTPUT);   
-  
+  pinMode(10, OUTPUT);
+
   sdCardInitialization();
 
   Serial.println(F("Initializing K30 sensor..."));
@@ -52,7 +52,7 @@ void setup() {
   Serial.println(F("Initializing DHT sensor..."));
   dht.begin();
   Serial.println(F("  DHT initialized"));
-  
+
   Serial.println(F("Initializing GPS..."));
   GPS.begin(9600);
 
@@ -63,10 +63,10 @@ void setup() {
   // Turn off updates on antenna status, if the firmware permits it
   // GPS.sendCommand(PGCMD_NOANTENNA);
   GPS.sendCommand(PGCMD_ANTENNA);
-  
+
   // Ask for firmware version
   gps_Serial.println(PMTK_Q_RELEASE);
-  
+
   Serial.println(F("Ready!"));
 }
 
@@ -81,19 +81,19 @@ void loop() {
   if (GPSECHO) {
      if (c)   Serial.print(c);
   }
-  
+
   // if a sentence is received, we can check the checksum, parse it...
   if (GPS.newNMEAreceived()) {
     // a tricky thing here is if we print the NMEA sentence, or data we end up not listening and catching other sentences! so be very wary if using OUTPUT_ALLDATA and trying to print out data
     //Serial.println(GPS.lastNMEA());   // this also sets the newNMEAreceived() flag to false
     GPS.lastNMEA();
-    
+
     if (!GPS.parse(GPS.lastNMEA()))  { // this also sets the newNMEAreceived() flag to false
       //Serial.println(F("Failed to parse GPS data"));
       return;  // we can fail to parse a sentence in which case we should just wait for another
     }
-    
-    // Sentence parsed! 
+
+    // Sentence parsed!
     //Serial.println("OK");
     if (LOG_FIXONLY && !GPS.fix) {
         Serial.println("No Fix");
@@ -101,17 +101,17 @@ void loop() {
     }
 
     //Serial.println("Write to File");
-    
+
     logfile.println(F("#####"));  // new data marker
     printHeader();
-    
+
     char *stringptr = GPS.lastNMEA();
     uint8_t stringsize = strlen(stringptr);
     if (stringsize != logfile.write((uint8_t *)stringptr, stringsize))  {  //write the string to the SD file
-      Serial.println(F("error with writing to SD")); 
+      Serial.println(F("error with writing to SD"));
       //error(4);
     }
-    
+
     printGPSData();
     logGPSData();
     printK30();
@@ -131,7 +131,7 @@ void sdCardInitialization(void)
   } else {
   Serial.println(F("SD Card init successful!"));
   }
-  
+
   // File Init
   char filename[15];
   sprintf(filename, "/LOG00.txt");
@@ -166,12 +166,12 @@ void printGPSData() {
   Serial.print(GPS.milliseconds);
   Serial.print(F(" "));
   Serial.print(F("Fix: ")); Serial.print((int)GPS.fix);
-  Serial.print(F(" quality: ")); Serial.print((int)GPS.fixquality); 
+  Serial.print(F(" quality: ")); Serial.print((int)GPS.fixquality);
   Serial.println();
   if (GPS.fix) {
     Serial.print(F("LOC: "));
     Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
-    Serial.print(F(", ")); 
+    Serial.print(F(", "));
     Serial.print(GPS.longitude, 4); Serial.print(GPS.lon);
     Serial.print(F(" Alt: ")); Serial.print(GPS.altitude);
     Serial.print(F(" Spd: ")); Serial.print(GPS.speed);
@@ -182,51 +182,37 @@ void printGPSData() {
 
 
 void logGPSData() {
-  logfile.print(F("GPS: "));
   logfile.print(GPS.month, DEC); logfile.print(F("/"));
-  logfile.print(GPS.day, DEC); logfile.print(F("/20"));
+  logfile.print(GPS.day, DEC); logfile.print(F("/"));
+  logfile.print(F("20"));
   logfile.print(GPS.year, DEC);
-  logfile.print(F(" "));
+  logfile.print(F(","));
   logfile.print(GPS.hour, DEC); logfile.print(F(":"));
   logfile.print(GPS.minute, DEC); logfile.print(F(":"));
-  logfile.print(GPS.seconds, DEC); logfile.print(F("."));
-  logfile.print(GPS.milliseconds);
-  logfile.print(F(" "));
-  logfile.print(F("Fix: ")); logfile.print((int)GPS.fix);
-  logfile.print(F(" quality: ")); logfile.print((int)GPS.fixquality); 
-  logfile.println();
-  logfile.print(F("GPS1,20"));
-  logfile.print(GPS.year, DEC); logfile.print(F(","));
-  logfile.print(GPS.month, DEC); logfile.print(F(","));
-  logfile.print(GPS.day, DEC);
-  logfile.print(F(","));
-  logfile.print(GPS.hour, DEC); logfile.print(F(","));
-  logfile.print(GPS.minute, DEC); logfile.print(F(","));
-  logfile.print(GPS.seconds, DEC); logfile.print(F(","));
+  logfile.print(GPS.seconds, DEC); logfile.print(F(":"));
   logfile.print(GPS.milliseconds);
   logfile.print(F(","));
   logfile.print(F("fix_")); logfile.print((int)GPS.fix);
   logfile.print(F(","));
-  logfile.print(F("qual_")); logfile.print((int)GPS.fixquality); 
-  logfile.println();
+  logfile.print(F("qual_")); logfile.print((int)GPS.fixquality);
+  logfile.print(F(","));
   if (GPS.fix) {
-    logfile.print(F("GPS2,"));
-    logfile.print(GPS.latitude, 6); logfile.print(F(",")); logfile.print(GPS.lat);
-    logfile.print(F(",")); 
-    logfile.print(GPS.longitude, 6); logfile.print(F(",")); logfile.print(GPS.lon);
+    logfile.print(gpsConverter(GPS.latitude), 6); logfile.print(F(",")); logfile.print(GPS.lat);
+    logfile.print(F(","));
+    logfile.print(gpsConverter(GPS.longitude), 6); logfile.print(F(",")); logfile.print(GPS.lon);
     logfile.print(F(",")); logfile.print(GPS.altitude);
     logfile.print(F(",")); logfile.print(GPS.speed);
     logfile.print(F(",")); logfile.print((int)GPS.satellites);
     logfile.println();
-    logfile.print(F("LOC: "));
-    logfile.print(GPS.latitude, 4); logfile.print(GPS.lat);
-    logfile.print(F(", ")); 
-    logfile.print(GPS.longitude, 4); logfile.print(GPS.lon);
-    logfile.print(F(" Alt: ")); logfile.print(GPS.altitude);
-    logfile.print(F(" Spd: ")); logfile.print(GPS.speed);
-    logfile.print(F(" Sats: ")); logfile.print((int)GPS.satellites);
-    logfile.println();
   }
+}
+
+float gpsConverter(float gps)
+{
+  int gps_min = (int)(gps/100);
+  float gps_sec = fmod(gps, 100) / 60;
+  float gps_dec = gps_min + gps_sec;
+  return gps_dec;
 }
 
 void K30sendRequest(byte packet[]) {
@@ -237,18 +223,18 @@ void K30sendRequest(byte packet[]) {
   }
   int timeout=0;  //set a timeoute counter
   while(K_30_Serial.available() < 7 ) { //Wait to get a 7 byte response
-    timeout++;  
+    timeout++;
     if(timeout > 10) {   //if it takes to long there was probably an error
         while(K_30_Serial.available())  //flush whatever we have
           K_30_Serial.read();
-          
+
           break;                        //exit and try again
       }
       delay(50);
   }
   for (int i=0; i < 7; i++) {
     response[i] = K_30_Serial.read();
-  }  
+  }
 }
 
 
@@ -285,7 +271,7 @@ void logK30(void)
 void logDHT(void)
 {
   if(readDHT()) {
-       // log DHT data 
+       // log DHT data
        logfile.print(F("DHT,"));
        logfile.print(dhtData.humidity);
        logfile.print(F(","));
@@ -315,20 +301,20 @@ void logDHT(void)
 boolean readDHT() {
   int loopFourth = loopCount % 4;
   if (loopFourth == 0) dhtRead = !dhtRead;
-    
+
   if(!dhtRead) {
      Serial.println(F("DHT: 0.25 Hz ReadOut"));
      dhtData.valid = false;
      return false;
   }
-  
+
   dhtRead = !dhtRead;
   // Reading temperature or humidity takes about 250 milliseconds!
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
   float h = dht.readHumidity();           // Read temperature as Celsius
   float t = dht.readTemperature();
   float f = dht.readTemperature(true);    // Read temperature as Fahrenheit
-  
+
   // Check if any reads failed and exit early (to try again).
   if (isnan(h) || isnan(t) || isnan(f)) {
     Serial.println(F("DHT: Failed to read from sensor!"));
@@ -336,27 +322,27 @@ boolean readDHT() {
   }
 
   float hi = dht.computeHeatIndex(f, h);      // Compute heat index Must send in temp in Fahrenheit!
-  
+
   // GK TODO: save values to struct
   dhtData.humidity = h;
   dhtData.temp_c = t;
   dhtData.temp_f = f;
   dhtData.heatIndex = hi;
   dhtData.valid = true;
-  
+
   Serial.print(F("DHT: "));
-  Serial.print(F("Humidity: ")); 
+  Serial.print(F("Humidity: "));
   Serial.print(h);
   Serial.print(F("% "));
-  Serial.print(F("Temp: ")); 
+  Serial.print(F("Temp: "));
   Serial.print(t);
   Serial.print(F("*C "));
   Serial.print(f);
   Serial.print(F(" *F "));
   Serial.print(F("HI: ")); // heat index
   Serial.print(hi);
-  Serial.println(F(" *F"));  
-  
+  Serial.println(F(" *F"));
+
   return true;
 }
 
@@ -365,7 +351,7 @@ void printHeader() {
   Serial.print(loopCount++);
   Serial.print(F(" "));
   Serial.print(millis());
-  Serial.println(F(" ########################################")); 
+  Serial.println(F(" ########################################"));
 }
 
 
