@@ -11,6 +11,13 @@ long smallPM1Count = 0;
 long priorSampleTime = 0;
 double smallPM1percentRunning;
 
+unsigned long duration;
+unsigned long starttime;
+unsigned long sampletime_ms = 2000;//sampe 30s&nbsp;;
+unsigned long lowpulseoccupancy = 0;
+float ratio = 0;
+float concentration = 0;
+
 #define chipSelect 10
 #define ledPin 3             
 #define GPSECHO  false       
@@ -69,10 +76,11 @@ void loop() {
     if (stringsize != logfile.write((uint8_t *)stringptr, stringsize))  {
       Serial.println(F("error with writing to SD")); 
     }
-    samplePMDetectors();
+//    samplePMDetectors();
     logGPSData();
     logCO();
-    logRunningPMDataToSerial();
+    logPM();
+//    logRunningPMDataToSerial();
     logfile.flush();
   }
 }
@@ -90,7 +98,7 @@ void sdCardInitialization(void)
   
   // File Init
   char filename[15];
-  sprintf(filename, "/LOG00.txt");
+  sprintf(filename, "/LOG00.csv");
   for (uint8_t i = 0; i < 100; i++) {
     filename[4] = '0' + i/10;
     filename[5] = '0' + i%10;
@@ -172,6 +180,24 @@ void logCO(void)
   analogWrite(ledPin, reading);
   logfile.println();
   delay(10);
+}
+
+void logPM(void)
+{
+  duration = pulseIn(smallPM1, LOW);
+  lowpulseoccupancy = lowpulseoccupancy+duration;
+
+  if ((millis()-starttime) >= sampletime_ms)//if the sampel time = = 30s
+  {
+    ratio = lowpulseoccupancy/(sampletime_ms*10.0);  // Integer percentage 0=&gt;100
+    concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
+    logfile.print("concentration = ");
+    logfile.print(concentration);
+    logfile.println(" pcs/0.01cf");
+    logfile.println("\n");
+    lowpulseoccupancy = 0;
+    starttime = millis();
+  }
 }
 
 void samplePMDetectors() {
