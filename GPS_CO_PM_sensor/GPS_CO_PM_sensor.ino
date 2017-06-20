@@ -2,6 +2,7 @@
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
 #include <SD.h>
+#include <math.h>
 
 File logfile;
 int const smallPM1 = 9;       // Pin # of Data line
@@ -165,30 +166,37 @@ void printGPSData() {
 
 
 void logGPSData() {
-  logfile.print(F("GPS1,20"));
-  logfile.print(GPS.year, DEC); logfile.print(F(","));
-  logfile.print(GPS.month, DEC); logfile.print(F(","));
-  logfile.print(GPS.day, DEC);
+  logfile.print(GPS.month, DEC); logfile.print(F("/"));
+  logfile.print(GPS.day, DEC); logfile.print(F("/"));
+  logfile.print(F("20"));
+  logfile.print(GPS.year, DEC);
   logfile.print(F(","));
-  logfile.print(GPS.hour, DEC); logfile.print(F(","));
-  logfile.print(GPS.minute, DEC); logfile.print(F(","));
-  logfile.print(GPS.seconds, DEC); logfile.print(F(","));
+  logfile.print(GPS.hour, DEC); logfile.print(F(":"));
+  logfile.print(GPS.minute, DEC); logfile.print(F(":"));
+  logfile.print(GPS.seconds, DEC); logfile.print(F(":"));
   logfile.print(GPS.milliseconds);
   logfile.print(F(","));
   logfile.print(F("fix_")); logfile.print((int)GPS.fix);
   logfile.print(F(","));
   logfile.print(F("qual_")); logfile.print((int)GPS.fixquality); 
-  logfile.println();
+  logfile.print(F(","));
   if (GPS.fix) {
-    logfile.print(F("GPS2,"));
-    logfile.print(GPS.latitude, 6); logfile.print(F(",")); logfile.print(GPS.lat);
+    logfile.print(gpsConverter(GPS.latitude), 6); logfile.print(F(",")); logfile.print(GPS.lat);
     logfile.print(F(",")); 
-    logfile.print(GPS.longitude, 6); logfile.print(F(",")); logfile.print(GPS.lon);
+    logfile.print(gpsConverter(GPS.longitude), 6); logfile.print(F(",")); logfile.print(GPS.lon);
     logfile.print(F(",")); logfile.print(GPS.altitude);
     logfile.print(F(",")); logfile.print(GPS.speed);
     logfile.print(F(",")); logfile.print((int)GPS.satellites);
     logfile.println();
   }
+}
+
+float gpsConverter(float gps)
+{
+  int gps_min = (int)(gps/100);
+  float gps_sec = fmod(gps, 100) / 60;
+  float gps_dec = gps_min + gps_sec;
+  return gps_dec;
 }
 
 void logPM(void)
@@ -203,7 +211,6 @@ void logPM(void)
     logfile.print("concentration = ");
     logfile.print(concentration);
     logfile.println(" pcs/0.01cf");
-    logfile.println("\n");
     lowpulseoccupancy = 0;
     starttime = millis();
   }

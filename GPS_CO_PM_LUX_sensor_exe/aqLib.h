@@ -1,0 +1,14 @@
+void sdCardInitialization(void);
+void printGPSData();
+void logGPSData();
+float gpsConverter(float gps);
+void logPM(void);
+void printPM(void);
+void logCO(void);
+void samplePMDetectors();
+void timestampSerial();
+void printRunningPMDataToSerial();
+void logRunningPMDataToSerial();
+void printHeader();
+uint8_t parseHex(char c);
+void error(uint8_t errno);
