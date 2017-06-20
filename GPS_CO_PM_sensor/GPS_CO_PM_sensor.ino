@@ -11,6 +11,13 @@ long smallPM1Count = 0;
 long priorSampleTime = 0;
 double smallPM1percentRunning;
 
+unsigned long duration;
+unsigned long starttime;
+unsigned long sampletime_ms = 2000;//sampe 30s&nbsp;;
+unsigned long lowpulseoccupancy = 0;
+float ratio = 0;
+float concentration = 0;
+
 #define chipSelect 10
 #define ledPin 3             
 #define GPSECHO  false       // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console, Set to 'true' if you want to debug and listen to the raw GPS sentences
@@ -44,6 +51,7 @@ void setup() {
   gps_Serial.println(PMTK_Q_RELEASE);
   
   Serial.println(F("Ready!"));
+  starttime = millis();//get the current time;
 }
 
 int loopCount = 1;
@@ -85,11 +93,12 @@ void loop() {
     if (stringsize != logfile.write((uint8_t *)stringptr, stringsize))  {  //write the string to the SD file
       Serial.println(F("error with writing to SD")); 
     }
-    samplePMDetectors();
+//     samplePMDetectors();
     logGPSData();
+    logPM();
     logCO();
-    logRunningPMDataToSerial();
-    printRunningPMDataToSerial();
+//     logRunningPMDataToSerial();
+//     printRunningPMDataToSerial();
     logfile.flush();
   }
 }
@@ -178,6 +187,24 @@ void logGPSData() {
     logfile.print(F(",")); logfile.print(GPS.speed);
     logfile.print(F(",")); logfile.print((int)GPS.satellites);
     logfile.println();
+  }
+}
+
+void logPM(void)
+{
+  duration = pulseIn(pin, LOW);
+  lowpulseoccupancy = lowpulseoccupancy+duration;
+
+  if ((millis()-starttime) >= sampletime_ms)//if the sampel time = = 30s
+  {
+    ratio = lowpulseoccupancy/(sampletime_ms*10.0);  // Integer percentage 0=&gt;100
+    concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
+    logfile.print("concentration = ");
+    logfile.print(concentration);
+    logfile.println(" pcs/0.01cf");
+    logfile.println("\n");
+    lowpulseoccupancy = 0;
+    starttime = millis();
   }
 }
 
