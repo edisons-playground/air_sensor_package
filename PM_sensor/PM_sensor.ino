@@ -4,7 +4,7 @@
 #include <SD.h>
 #include <Wire.h>
 
-int const smallPM1 = 3;
+int const smallPM1 = 3;       // Pin # of SmallPM data line
 long const sampleRate = 20;
 long measurementCount = 0;
 long smallPM1Count = 0;
