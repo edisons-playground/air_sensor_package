@@ -107,7 +107,7 @@ void sdCardInitialization(void)
   
   // File Init
   char filename[15];
-  sprintf(filename, "/LOG00.txt");
+  sprintf(filename, "/LOG00.csv");
   for (uint8_t i = 0; i < 100; i++) {
     filename[4] = '0' + i/10;
     filename[5] = '0' + i%10;
