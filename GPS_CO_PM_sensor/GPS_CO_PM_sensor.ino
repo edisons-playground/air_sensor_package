@@ -4,7 +4,7 @@
 #include <SD.h>
 
 File logfile;
-int const smallPM1 = 9;
+int const smallPM1 = 9;       // Pin # of Data line
 long const sampleRate = 20;
 long measurementCount = 0;
 long smallPM1Count = 0;
