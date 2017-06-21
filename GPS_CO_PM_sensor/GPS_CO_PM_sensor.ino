@@ -86,7 +86,7 @@ void loop() {
 
     //Serial.println("Write to File");
     
-    logfile.println(F("#####"));  // new data marker
+    logfile.println(F("\n#####"));  // new data marker
     printHeader();
     
     char *stringptr = GPS.lastNMEA();
@@ -94,13 +94,8 @@ void loop() {
     if (stringsize != logfile.write((uint8_t *)stringptr, stringsize))  {  //write the string to the SD file
       Serial.println(F("error with writing to SD")); 
     }
-//     samplePMDetectors();
-    logGPSData();
-    printPM();
-    logPM();
-    logCO();
-//     logRunningPMDataToSerial();
-//     printRunningPMDataToSerial();
+    
+    logData();
     logfile.flush();
   }
 }
@@ -165,7 +160,7 @@ void printGPSData() {
 }
 
 
-void logGPSData() {
+void logData() {
   logfile.print(GPS.month, DEC); logfile.print(F("/"));
   logfile.print(GPS.day, DEC); logfile.print(F("/"));
   logfile.print(F("20"));
@@ -187,7 +182,10 @@ void logGPSData() {
     logfile.print(F(",")); logfile.print(GPS.altitude);
     logfile.print(F(",")); logfile.print(GPS.speed);
     logfile.print(F(",")); logfile.print((int)GPS.satellites);
-    logfile.println();
+    logfile.print(F(","));
+    logCO();
+    logfile.print(F(","));
+    logPM();
   }
 }
 
@@ -211,20 +209,6 @@ void logPM(void)
     logfile.print("concentration = ");
     logfile.print(concentration);
     logfile.println(" pcs/0.01cf");
-    lowpulseoccupancy = 0;
-    starttime = millis();
-  }
-}
-
-void printPM(void)
-{
-  duration = pulseIn(smallPM1, LOW);
-  lowpulseoccupancy = lowpulseoccupancy+duration;
-
-  if ((millis()-starttime) >= sampletime_ms)//if the sampel time = = 30s
-  {
-    ratio = lowpulseoccupancy/(sampletime_ms*10.0);  // Integer percentage 0=&gt;100
-    concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
     Serial.print("concentration = ");
     Serial.print(concentration);
     Serial.println(" pcs/0.01cf");
@@ -233,54 +217,18 @@ void printPM(void)
   }
 }
 
+
 void logCO(void)
 {
   int reading = analogRead(A0);
   Serial.print("CO Sensor, "); Serial.println(reading);
-  logfile.print(F("CO Sensor, "));
+  logfile.print(F("CO Sensor "));
   logfile.print(reading);
   analogWrite(ledPin, reading);
-  logfile.println();
+//  logfile.println();
   delay(10);
 }
 
-void samplePMDetectors() {
-  for (int i = 0; i < 100; i++) {
-    while (millis() - priorSampleTime < sampleRate) {
-    }
-    priorSampleTime = millis();
-    measurementCount += 1;
-    if (digitalRead(smallPM1) == 0) {
-      smallPM1Count += 1;
-    }
-  }
-  //calculate running PM percentages
-  smallPM1percentRunning = 100.0 * smallPM1Count / measurementCount;
-}
-
-
-void timestampSerial() {
-  Serial.print("Milliseconds since the program started: ");
-  Serial.println(millis());
-}
-
-void printRunningPMDataToSerial() {
-  Serial.println("Particulate Matter Data");
-  Serial.print("Measurement Count:  ");
-  Serial.println(measurementCount);
-  Serial.print("Small PM detector 1: ");
-  Serial.println(smallPM1percentRunning);
-  Serial.println();
-}
-
-void logRunningPMDataToSerial() {
-  logfile.println("Particulate Matter Data");
-  logfile.print("Measurement Count:  ");
-  logfile.println(measurementCount);
-  logfile.print("Small PM detector 1: ");
-  logfile.println(smallPM1percentRunning);
-  logfile.println();
-}
 
 void printHeader() {
   Serial.print(F("##### Sample "));   // new data marker
