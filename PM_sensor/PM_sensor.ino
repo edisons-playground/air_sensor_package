@@ -80,63 +80,23 @@ void logPM(void)
     logfile.print("concentration = ");
     logfile.print(concentration);
     logfile.println(" pcs/0.01cf");
+    logfile.print("concentration = ");
+    logfile.print(pm25pcs2ugm3(concentration));
+    logfile.println(" ugm/0.01cf");         //Check if correct unit
     lowpulseoccupancy = 0;
     starttime = millis();
   }
 }
 
-void printPM(void)
+
+float pm25pcs2ugm3 (float concentration_pcs)
 {
-  duration = pulseIn(smallPM1, LOW);
-  lowpulseoccupancy = lowpulseoccupancy+duration;
+  double pi = 3.14159;
+  double density = 1.65 * pow (10, 12);
+  double r25 = 0.44 * pow (10, -6);
+  double vol25 = (4/3) * pi * pow (r25, 3);
+  double mass25 = density * vol25;
+  double K = 3531.5;
 
-  if ((millis()-starttime) >= sampletime_ms)//if the sampel time = = 30s
-  {
-    ratio = lowpulseoccupancy/(sampletime_ms*10.0);  // Integer percentage 0=&gt;100
-    concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
-    Serial.print("concentration = ");
-    Serial.print(concentration);
-    Serial.println(" pcs/0.01cf");
-    lowpulseoccupancy = 0;
-    starttime = millis();
-  }
-}
-
-
-void samplePMDetectors() {
-  for (int i = 0; i < 100; i++) {
-    while (millis() - priorSampleTime < sampleRate) {
-    }
-    priorSampleTime = millis();
-    measurementCount += 1;
-    if (digitalRead(smallPM1) == 0) {
-      smallPM1Count += 1;
-    }
-  }
-  //calculate running PM percentages
-  smallPM1percentRunning = 100.0 * smallPM1Count / measurementCount;
-}
-
-
-void timestampSerial() {
-  Serial.print("Milliseconds since the program started: ");
-  Serial.println(millis());
-}
-
-void printRunningPMDataToSerial() {
-  Serial.println("Particulate Matter Data");
-  Serial.print("Measurement Count:  ");
-  Serial.println(measurementCount);
-  Serial.print("Small PM detector 1: ");
-  Serial.println(smallPM1percentRunning);
-  Serial.println();
-}
-
-void logRunningPMDataToSerial() {
-  logfile.println("Particulate Matter Data");
-  logfile.print("Measurement Count:  ");
-  logfile.println(measurementCount);
-  logfile.print("Small PM detector 1: ");
-  logfile.println(smallPM1percentRunning);
-  logfile.println();
+  return (concentration_pcs) * K * mass25;
 }

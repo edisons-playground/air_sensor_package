@@ -20,21 +20,21 @@ float ratio = 0;
 float concentration = 0;
 
 #define chipSelect 10
-#define ledPin 3             
+#define ledPin 3
 #define GPSECHO  false       // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console, Set to 'true' if you want to debug and listen to the raw GPS sentences
 #define LOG_FIXONLY true     //set to true to only log to SD when GPS has a fix, for debugging, keep it false
 
 // GPS Init
 SoftwareSerial gps_Serial(8, 7);
 Adafruit_GPS GPS(&gps_Serial);
-                                    
+
 
 void setup() {
   Serial.begin(115200);
   pinMode (smallPM1, INPUT);
   pinMode(ledPin, OUTPUT);
-  pinMode(10, OUTPUT);   
-  
+  pinMode(10, OUTPUT);
+
   sdCardInitialization();
 
   Serial.println(F("Initializing GPS..."));
@@ -47,10 +47,10 @@ void setup() {
   // Turn off updates on antenna status, if the firmware permits it
   // GPS.sendCommand(PGCMD_NOANTENNA);
   GPS.sendCommand(PGCMD_ANTENNA);
-  
+
   // Ask for firmware version
   gps_Serial.println(PMTK_Q_RELEASE);
-  
+
   Serial.println(F("Ready!"));
   starttime = millis();//get the current time;
 }
@@ -65,19 +65,19 @@ void loop() {
   if (GPSECHO) {
      if (c)   Serial.print(c);
   }
-  
+
   // if a sentence is received, we can check the checksum, parse it...
   if (GPS.newNMEAreceived()) {
     // a tricky thing here is if we print the NMEA sentence, or data we end up not listening and catching other sentences! so be very wary if using OUTPUT_ALLDATA and trying to print out data
     //Serial.println(GPS.lastNMEA());   // this also sets the newNMEAreceived() flag to false
     GPS.lastNMEA();
-    
+
     if (!GPS.parse(GPS.lastNMEA()))  { // this also sets the newNMEAreceived() flag to false
       //Serial.println(F("Failed to parse GPS data"));
       return;  // we can fail to parse a sentence in which case we should just wait for another
     }
-    
-    // Sentence parsed! 
+
+    // Sentence parsed!
     //Serial.println("OK");
     if (LOG_FIXONLY && !GPS.fix) {
         Serial.println("No Fix");
@@ -85,16 +85,16 @@ void loop() {
     }
 
     //Serial.println("Write to File");
-    
+
     logfile.println(F("\n#####"));  // new data marker
     printHeader();
-    
+
     char *stringptr = GPS.lastNMEA();
     uint8_t stringsize = strlen(stringptr);
     if (stringsize != logfile.write((uint8_t *)stringptr, stringsize))  {  //write the string to the SD file
-      Serial.println(F("error with writing to SD")); 
+      Serial.println(F("error with writing to SD"));
     }
-    
+
     logData();
     logfile.flush();
   }
@@ -110,7 +110,7 @@ void sdCardInitialization(void)
   } else {
   Serial.println(F("SD Card init successful!"));
   }
-  
+
   // File Init
   char filename[15];
   sprintf(filename, "/LOG00.csv");
@@ -145,12 +145,12 @@ void printGPSData() {
   Serial.print(GPS.milliseconds);
   Serial.print(F(" "));
   Serial.print(F("Fix: ")); Serial.print((int)GPS.fix);
-  Serial.print(F(" quality: ")); Serial.print((int)GPS.fixquality); 
+  Serial.print(F(" quality: ")); Serial.print((int)GPS.fixquality);
   Serial.println();
   if (GPS.fix) {
     Serial.print(F("LOC: "));
     Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
-    Serial.print(F(", ")); 
+    Serial.print(F(", "));
     Serial.print(GPS.longitude, 4); Serial.print(GPS.lon);
     Serial.print(F(" Alt: ")); Serial.print(GPS.altitude);
     Serial.print(F(" Spd: ")); Serial.print(GPS.speed);
@@ -173,11 +173,11 @@ void logData() {
   logfile.print(F(","));
   logfile.print(F("fix_")); logfile.print((int)GPS.fix);
   logfile.print(F(","));
-  logfile.print(F("qual_")); logfile.print((int)GPS.fixquality); 
+  logfile.print(F("qual_")); logfile.print((int)GPS.fixquality);
   logfile.print(F(","));
   if (GPS.fix) {
     logfile.print(gpsConverter(GPS.latitude), 6); logfile.print(F(",")); logfile.print(GPS.lat);
-    logfile.print(F(",")); 
+    logfile.print(F(","));
     logfile.print(gpsConverter(GPS.longitude), 6); logfile.print(F(",")); logfile.print(GPS.lon);
     logfile.print(F(",")); logfile.print(GPS.altitude);
     logfile.print(F(",")); logfile.print(GPS.speed);
@@ -212,11 +212,28 @@ void logPM(void)
     Serial.print("concentration = ");
     Serial.print(concentration);
     Serial.println(" pcs/0.01cf");
+    logfile.print("concentration = ");
+    logfile.print(pm25pcs2ugm3(concentration));
+    logfile.println(" ugm/0.01cf");
+    Serial.print("concentration = ");
+    Serial.print(pm25pcs2ugm3(concentration));
+    Serial.println(" ugm/0.01cf");
     lowpulseoccupancy = 0;
     starttime = millis();
   }
 }
 
+float pm25pcs2ugm3 (float concentration_pcs)
+{
+  double pi = 3.14159;
+  double density = 1.65 * pow (10, 12);
+  double r25 = 0.44 * pow (10, -6);
+  double vol25 = (4/3) * pi * pow (r25, 3);
+  double mass25 = density * vol25;
+  double K = 3531.5;
+
+  return (concentration_pcs) * K * mass25;
+}
 
 void logCO(void)
 {
@@ -235,7 +252,7 @@ void printHeader() {
   Serial.print(loopCount++);
   Serial.print(F(" "));
   Serial.print(millis());
-  Serial.println(F(" ########################################")); 
+  Serial.println(F(" ########################################"));
 }
 
 

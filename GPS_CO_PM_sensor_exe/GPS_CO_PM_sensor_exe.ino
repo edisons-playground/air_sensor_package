@@ -19,20 +19,20 @@ float ratio = 0;
 float concentration = 0;
 
 #define chipSelect 10
-#define ledPin 3             
-#define GPSECHO  false       
-#define LOG_FIXONLY true     
+#define ledPin 3
+#define GPSECHO  false
+#define LOG_FIXONLY true
 
 SoftwareSerial gps_Serial(8, 7);
 Adafruit_GPS GPS(&gps_Serial);
-                                    
+
 
 void setup() {
   Serial.begin(115200);
   pinMode (smallPM1, INPUT);
   pinMode(ledPin, OUTPUT);
-  pinMode(10, OUTPUT);   
-  
+  pinMode(10, OUTPUT);
+
   sdCardInitialization();
 
   Serial.println(F("Initializing GPS..."));
@@ -57,11 +57,11 @@ void loop() {
   if (GPSECHO) {
      if (c)   Serial.print(c);
   }
-  
-  if (GPS.newNMEAreceived()) {  
+
+  if (GPS.newNMEAreceived()) {
     if (!GPS.parse(GPS.lastNMEA()))  { // this also sets the newNMEAreceived() flag to false
       //Serial.println(F("Failed to parse GPS data"));
-      return;  
+      return;
     }
     if (LOG_FIXONLY && !GPS.fix) {
         Serial.println("No Fix");
@@ -70,11 +70,11 @@ void loop() {
 
     logfile.println(F("\n#####"));
     printHeader();
-    
+
     char *stringptr = GPS.lastNMEA();
     uint8_t stringsize = strlen(stringptr);
     if (stringsize != logfile.write((uint8_t *)stringptr, stringsize))  {
-      Serial.println(F("error with writing to SD")); 
+      Serial.println(F("error with writing to SD"));
     }
 
     logData();
@@ -92,7 +92,7 @@ void sdCardInitialization(void)
   } else {
   Serial.println(F("SD Card init successful!"));
   }
-  
+
   // File Init
   char filename[15];
   sprintf(filename, "/LOG00.csv");
@@ -127,12 +127,12 @@ void printGPSData() {
   Serial.print(GPS.milliseconds);
   Serial.print(F(" "));
   Serial.print(F("Fix: ")); Serial.print((int)GPS.fix);
-  Serial.print(F(" quality: ")); Serial.print((int)GPS.fixquality); 
+  Serial.print(F(" quality: ")); Serial.print((int)GPS.fixquality);
   Serial.println();
   if (GPS.fix) {
     Serial.print(F("LOC: "));
     Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
-    Serial.print(F(", ")); 
+    Serial.print(F(", "));
     Serial.print(GPS.longitude, 4); Serial.print(GPS.lon);
     Serial.print(F(" Alt: ")); Serial.print(GPS.altitude);
     Serial.print(F(" Spd: ")); Serial.print(GPS.speed);
@@ -155,11 +155,11 @@ void logData() {
   logfile.print(F(","));
   logfile.print(F("fix_")); logfile.print((int)GPS.fix);
   logfile.print(F(","));
-  logfile.print(F("qual_")); logfile.print((int)GPS.fixquality); 
+  logfile.print(F("qual_")); logfile.print((int)GPS.fixquality);
   logfile.print(F(","));
   if (GPS.fix) {
     logfile.print(gpsConverter(GPS.latitude), 6); logfile.print(F(",")); logfile.print(GPS.lat);
-    logfile.print(F(",")); 
+    logfile.print(F(","));
     logfile.print(gpsConverter(GPS.longitude), 6); logfile.print(F(",")); logfile.print(GPS.lon);
     logfile.print(F(",")); logfile.print(GPS.altitude);
     logfile.print(F(",")); logfile.print(GPS.speed);
@@ -200,18 +200,31 @@ void logPM(void)
     concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
     logfile.print(concentration);
     logfile.print("_pcs/0.01cf");
+    logfile.print(pm25pcs2ugm3(concentration));
+    logfile.print("_ugm/0.01cf");
     lowpulseoccupancy = 0;
     starttime = millis();
   }
 }
 
+float pm25pcs2ugm3 (float concentration_pcs)
+{
+  double pi = 3.14159;
+  double density = 1.65 * pow (10, 12);
+  double r25 = 0.44 * pow (10, -6);
+  double vol25 = (4/3) * pi * pow (r25, 3);
+  double mass25 = density * vol25;
+  double K = 3531.5;
+
+  return (concentration_pcs) * K * mass25;
+}
 
 void printHeader() {
   Serial.print(F("##### Sample "));
   Serial.print(loopCount++);
   Serial.print(F(" "));
   Serial.print(millis());
-  Serial.println(F(" ########################################")); 
+  Serial.println(F(" ########################################"));
 }
 
 uint8_t parseHex(char c) {
