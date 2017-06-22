@@ -81,6 +81,7 @@ void logPM(void)
     logfile.print(concentration);
     logfile.println(" pcs/0.01cf");
     logfile.print("concentration = ");
+    logfile.print(F(","));
     logfile.print(pm25pcs2ugm3(concentration));
     logfile.println(" ugm/0.01cf");         //Check if correct unit
     lowpulseoccupancy = 0;

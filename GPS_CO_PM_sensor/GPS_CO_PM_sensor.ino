@@ -209,12 +209,15 @@ void logPM(void)
     logfile.print("concentration = ");
     logfile.print(concentration);
     logfile.println(" pcs/0.01cf");
+    logfile.print(F(","));
     Serial.print("concentration = ");
     Serial.print(concentration);
     Serial.println(" pcs/0.01cf");
+    logfile.print(F(","));
     logfile.print("concentration = ");
     logfile.print(pm25pcs2ugm3(concentration));
     logfile.println(" ugm/0.01cf");
+    logfile.print(F(","));
     Serial.print("concentration = ");
     Serial.print(pm25pcs2ugm3(concentration));
     Serial.println(" ugm/0.01cf");

@@ -200,6 +200,7 @@ void logPM(void)
     concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
     logfile.print(concentration);
     logfile.print("_pcs/0.01cf");
+    logfile.print(F(","));
     logfile.print(pm25pcs2ugm3(concentration));
     logfile.print("_ugm/0.01cf");
     lowpulseoccupancy = 0;
