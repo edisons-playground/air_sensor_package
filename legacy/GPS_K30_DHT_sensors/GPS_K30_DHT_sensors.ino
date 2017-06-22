@@ -100,9 +100,6 @@ void loop() {
         return;
     }
 
-    //Serial.println("Write to File");
-
-    logfile.println(F("#####"));  // new data marker
     printHeader();
 
     char *stringptr = GPS.lastNMEA();
@@ -113,10 +110,7 @@ void loop() {
     }
 
     printGPSData();
-    logGPSData();
-    printK30();
-    logK30();
-    logDHT();
+    logData();
     logfile.flush();
   }
 }
@@ -134,7 +128,7 @@ void sdCardInitialization(void)
 
   // File Init
   char filename[15];
-  sprintf(filename, "/LOG00.txt");
+  sprintf(filename, "/LOG00.csv");
   for (uint8_t i = 0; i < 100; i++) {
     filename[4] = '0' + i/10;
     filename[5] = '0' + i%10;
@@ -181,7 +175,7 @@ void printGPSData() {
 }
 
 
-void logGPSData() {
+void logData() {
   logfile.print(GPS.month, DEC); logfile.print(F("/"));
   logfile.print(GPS.day, DEC); logfile.print(F("/"));
   logfile.print(F("20"));
@@ -203,6 +197,10 @@ void logGPSData() {
     logfile.print(F(",")); logfile.print(GPS.altitude);
     logfile.print(F(",")); logfile.print(GPS.speed);
     logfile.print(F(",")); logfile.print((int)GPS.satellites);
+    logfile.print(F(","));
+    logK30();
+    logfile.print(F(","));
+    logDHT();
     logfile.println();
   }
 }
@@ -262,8 +260,8 @@ void logK30(void)
     unsigned long valCO2 = K30getValue(response);
     Serial.print(F("K30: Co2 ppm = "));
     Serial.println(valCO2);
-    logfile.print(F("K30,"));
-    logfile.println(valCO2);
+    logfile.print(F("K30: "));
+    logfile.print(valCO2);
     logfile.flush();
 }
 
@@ -272,7 +270,7 @@ void logDHT(void)
 {
   if(readDHT()) {
        // log DHT data
-       logfile.print(F("DHT,"));
+       logfile.print(F("DHT: "));
        logfile.print(dhtData.humidity);
        logfile.print(F(","));
        logfile.print(dhtData.temp_c);
@@ -290,11 +288,11 @@ void logDHT(void)
        Serial.println(dhtData.heatIndex);
        logfile.flush();
     }
-//    else {
-//       logfile.println(F("DHT,-1,-1,-1,-1"));
-//       Serial.println(F("DHT,-1,-1,-1,-1"));
-//       logfile.flush();
-//    }
+    else {
+       logfile.println(F("DHT: -1,-1,-1,-1"));
+       Serial.println(F("DHT: -1,-1,-1,-1"));
+       logfile.flush();
+    }
 }
 
 // poll the DHT every other cycle (0.5Hz) this relies for the GPS to be at the 1Hz Rate

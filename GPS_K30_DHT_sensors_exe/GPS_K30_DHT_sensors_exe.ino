@@ -81,8 +81,6 @@ void loop() {
         return;
     }
 
-
-    logfile.println(F("#####"));
     printHeader();
 
     char *stringptr = GPS.lastNMEA();
@@ -91,9 +89,7 @@ void loop() {
       Serial.println(F("error with writing to SD"));
     }
 
-    logGPSData();
-    logK30();
-    logDHT();
+    logData();
     logfile.flush();
   }
 }
@@ -109,7 +105,7 @@ void sdCardInitialization(void)
   }
 
   char filename[15];
-  sprintf(filename, "/LOG00.txt");
+  sprintf(filename, "/LOG00.csv");
   for (uint8_t i = 0; i < 100; i++) {
     filename[4] = '0' + i/10;
     filename[5] = '0' + i%10;
@@ -128,7 +124,8 @@ void sdCardInitialization(void)
   Serial.print(F("Writing to ")); Serial.println(filename);
 }
 
-void logGPSData() {
+void logData() {
+  logfile.print(F("\n"));
   logfile.print(GPS.month, DEC); logfile.print(F("/"));
   logfile.print(GPS.day, DEC); logfile.print(F("/"));
   logfile.print(F("20"));
@@ -150,6 +147,10 @@ void logGPSData() {
     logfile.print(F(",")); logfile.print(GPS.altitude);
     logfile.print(F(",")); logfile.print(GPS.speed);
     logfile.print(F(",")); logfile.print((int)GPS.satellites);
+    logfile.print(F(","));
+    logK30();
+    logfile.print(F(","));
+    logDHT();
     logfile.println();
   }
 }
@@ -197,8 +198,7 @@ void logK30(void)
     K_30_Serial.listen();
     K30sendRequest(read_CO2);
     unsigned long valCO2 = K30getValue(response);
-    logfile.print(F("K30,"));
-    logfile.println(valCO2);
+    logfile.print(valCO2);
     logfile.flush();
 }
 
@@ -207,20 +207,19 @@ void logDHT(void)
 {
   if(readDHT()) {
        // log DHT data
-       logfile.print(F("DHT,"));
        logfile.print(dhtData.humidity);
        logfile.print(F(","));
        logfile.print(dhtData.temp_c);
        logfile.print(F(","));
        logfile.print(dhtData.temp_f);
        logfile.print(F(","));
-       logfile.println(dhtData.heatIndex);
+       logfile.print(dhtData.heatIndex);
        logfile.flush();
     }
-//    else {
-//       logfile.println(F("DHT,-1,-1,-1,-1"));
-//       logfile.flush();
-//    }
+    else {
+       logfile.println(F("-1,-1,-1,-1"));
+       logfile.flush();
+    }
 }
 
 boolean readDHT() {
