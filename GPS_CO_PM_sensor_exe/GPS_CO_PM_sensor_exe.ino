@@ -68,7 +68,6 @@ void loop() {
         return;
     }
 
-    logfile.println(F("\n#####"));
     printHeader();
 
     char *stringptr = GPS.lastNMEA();
@@ -78,6 +77,8 @@ void loop() {
     }
 
     logData();
+    logPM();
+    logfile.println();
     logfile.flush();
   }
 }
@@ -115,34 +116,8 @@ void sdCardInitialization(void)
 }
 
 
-void printGPSData() {
-  Serial.print(F("GPS: "));
-  Serial.print(GPS.month, DEC); Serial.print(F("/"));
-  Serial.print(GPS.day, DEC); Serial.print(F("/20"));
-  Serial.print(GPS.year, DEC);
-  Serial.print(F(" "));
-  Serial.print(GPS.hour, DEC); Serial.print(F(":"));
-  Serial.print(GPS.minute, DEC); Serial.print(F(":"));
-  Serial.print(GPS.seconds, DEC); Serial.print(F("."));
-  Serial.print(GPS.milliseconds);
-  Serial.print(F(" "));
-  Serial.print(F("Fix: ")); Serial.print((int)GPS.fix);
-  Serial.print(F(" quality: ")); Serial.print((int)GPS.fixquality);
-  Serial.println();
-  if (GPS.fix) {
-    Serial.print(F("LOC: "));
-    Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
-    Serial.print(F(", "));
-    Serial.print(GPS.longitude, 4); Serial.print(GPS.lon);
-    Serial.print(F(" Alt: ")); Serial.print(GPS.altitude);
-    Serial.print(F(" Spd: ")); Serial.print(GPS.speed);
-    Serial.print(F(" Sats: ")); Serial.print((int)GPS.satellites);
-    Serial.println();
-  }
-}
-
-
 void logData() {
+  logfile.print(F("\n"));
   logfile.print(GPS.month, DEC); logfile.print(F("/"));
   logfile.print(GPS.day, DEC); logfile.print(F("/"));
   logfile.print(F("20"));
@@ -167,7 +142,6 @@ void logData() {
     logfile.print(F(","));
     logCO();
     logfile.print(F(","));
-    logPM();
   }
 }
 
